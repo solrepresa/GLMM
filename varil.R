@@ -10,11 +10,13 @@
 # # # # # # # # # # # # # # # # # # # # # # # #
 
 library(glmmADMB)
+library(gridExtra)
+
 
 data <- read.csv("C:\\Users\\solre\\Desktop\\ModelosMixtos\\varil.csv", sep = ";", dec=",")
 
 str(data)
-data$exinido <- as.factor(data$exinido)  
+data$exinido <- factor(data$exinido, labels = c("Fracasos", "Exitos"))  
 #data$vis <- factor(data$vis)
 
 
@@ -37,21 +39,91 @@ data <- data[, c(1:4, 6:7, 9, 12)]
 summary(data)
 
 
-ggplot(data) + 
-  geom_bar(aes( x = exinido)) + 
+### PLOT 1
+g1 <- ggplot(data) + 
+  geom_bar(aes( x = exinido, fill = exinido),
+           show.legend = FALSE) + 
   theme_bw() +
-  labs( title = " N de exitos - fracasos")
+  labs( title = "N exitos y fracasos", y= "", fill = "", x = "")
 
-ggplot(data) + 
-  geom_bar(aes( x = exinido)) + 
-  facet_grid(~ huevos ) + 
+
+## PLOT 2
+g2 <- ggplot(data) + 
+  geom_boxplot(aes( x = exinido, y = long, fill = exinido), alpha = 0.1, show.legend = FALSE) + 
+  geom_point(aes( x = exinido, y = long, col = exinido), 
+             size = 2,
+             show.legend = FALSE,
+             position = position_jitterdodge(dodge.width = 0.1, jitter.width = 0.2)) + 
   theme_bw() +
-  labs( title = " N de exitos - fracasos por huevos")
+  labs( title = "", y = "Longitud", col = "", x = "")
 
 
+## PLOT 3
+g3 <- ggplot(data) + 
+  geom_boxplot(aes( x = exinido, y = ancho, fill = exinido), alpha = 0.1, show.legend = FALSE) + 
+  geom_point(aes( x = exinido, y = ancho, col = exinido), 
+             size = 2,
+             show.legend = FALSE,
+             position = position_jitterdodge(dodge.width = 0.1, jitter.width = 0.2)) + 
+  theme_bw() +
+  labs( title = "", y = "Ancho", col = "", x = "")
+
+
+## PLOT 4
+g4 <- ggplot(data) + 
+  geom_boxplot(aes( x = exinido, y = prof, fill = exinido), alpha = 0.1, show.legend = FALSE) + 
+  geom_point(aes( x = exinido, y = prof, col = exinido),
+             size = 2,
+             show.legend = FALSE,
+             position = position_jitterdodge(dodge.width = 0.1, jitter.width = 0.2)) + 
+  theme_bw() +
+  labs( title = "", y = "Profundidad", col = "", x = "")
+
+grid.arrange(g2, g3, g4, ncol = 3)
+
+
+
+## PLOT 5
+g5 <- ggplot(data) + 
+  geom_boxplot(aes( x = exinido, y = alt, fill = exinido), alpha = 0.1, show.legend = FALSE) + 
+  geom_point(aes( x = exinido, y = alt, col = exinido), 
+             size = 2, 
+             show.legend = FALSE,
+             position = position_jitterdodge(dodge.width = 0.1, jitter.width = 0.2)) + 
+  theme_bw() +
+  labs( title = "", y = " Altura", col = "", x = "")
+
+
+### PLOT 6
+g6 <- ggplot(data) + 
+  geom_boxplot(aes( x = exinido, y = vis, fill = exinido), alpha = 0.1, show.legend = FALSE) + 
+  geom_point(aes( x = exinido, y = vis, col = exinido), 
+             size = 2,
+             show.legend = FALSE,
+             position = position_jitterdodge(dodge.width = 0.1, jitter.width = 0.2)) + 
+  theme_bw() +
+  labs( title = "", y = "Visibilidad", col = "", x = "")
+
+
+grid.arrange(g1, g5, g6, ncol = 3)
+
+## PLOT 7
 ggplot(data) + 
-  geom_freqpoly(aes( x = alt, col = exinido)) + 
-  theme_bw() 
+  geom_bar(aes( x = exinido, fill = exinido),
+           show.legend = FALSE) + 
+  facet_grid( ~huevos ) + 
+  theme_bw() +
+  labs( title = " Numero de exitos y fracasos por huevos", y= "", fill = "", x = "")
+
+
+
+
+#ggplot(data) + geom_freqpoly(aes( x = alt, col = exinido)) +  theme_bw() 
+
+
+
+
+
 
 # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -66,6 +138,9 @@ data.escala <- scale(data[,2:6])
 data.escala <- as.data.frame(data.escala)
 names(data.escala) <- c("long.esc",  "ancho.esc", "prof.esc", "alt.esc", "vis.esc"  )
 data <- cbind(data, data.escala)
+
+#data$huevos <- factor(data$huevos) <<< poner huevos como factor tira warnings
+#data$nido <- factor(data$nido)
 
 modelo.1 <- lme4::glmer(exinido ~ prof.esc + alt.esc + vis.esc + long.esc + ancho.esc + huevos + (1| nido) , 
       data = data, 
@@ -107,24 +182,27 @@ mod.0 <- glm(exinido ~ 1,
              family ="binomial")
 
 mod.1 <- lme4::glmer(exinido ~ prof.esc + alt.esc + vis.esc + long.esc + ancho.esc + huevos + (1| nido) , 
+                        data = data,
+                        family = "binomial")
+
+mod.2 <- lme4::glmer(exinido ~  prof.esc + long.esc + ancho.esc + alt.esc + huevos + (1| nido) , 
                         data = data, 
                         family = "binomial")
 
-mod.2 <- lme4::glmer(exinido ~  alt.esc + vis.esc + huevos + (1| nido) , 
+mod.3 <- lme4::glmer(exinido ~ alt.esc+ vis.esc + huevos + (1| nido) , 
                         data = data, 
                         family = "binomial")
 
-mod.3 <- lme4::glmer(exinido ~ prof.esc+ vis.esc + long.esc + ancho.esc + huevos + (1| nido) , 
-                        data = data, 
-                        family = "binomial")
+mod.4 <- lme4::glmer(exinido ~ prof.esc + vis.esc +long.esc + ancho.esc + huevos + (1| nido) , 
+                     data = data, 
+                     family = "binomial")
 
-mod.4 <- lme4::glmer(exinido ~ prof.esc + alt.esc + long.esc + ancho.esc + huevos + (1| nido) , 
+mod.5 <- lme4::glmer(exinido ~ prof.esc + huevos + (1| nido) , 
                      data = data, 
                      family = "binomial")
 
 
-
-model.sel(mod.0, mod.1, mod.2, mod.3, mod.4, rank = "AICc")  
+model.sel(mod.0, mod.1, mod.2, mod.3, mod.4, mod.5, rank = "AICc")  
 
 
 # # # # # # # # # # # # # # # # # # # # # # # #
@@ -133,13 +211,37 @@ model.sel(mod.0, mod.1, mod.2, mod.3, mod.4, rank = "AICc")
 
 # # # # # # # # # # # # # # # # # # # # # # # #
 
-MA <- model.avg(mod.4, mod.2, beta = F, revised.var = TRUE)
+MA <- model.avg(mod.3, mod.2, mod.5, beta = F, revised.var = TRUE)
 summary(MA)
 coef(MA)
 confint(MA)
 
 
 
+# # # # # # # # # # # # # # # # # # # # # # # #
 
-#  Modelo mínimo adecuado  ####
+# 5) Modelo mínimo adecuado ####  <<<<<< ¿Hay q ponerlo?
+
+# # # # # # # # # # # # # # # # # # # # # # # #
+
+mod.5final <- lme4::glmer(exinido ~ huevos + (1| nido) , 
+                     data = data, 
+                     family = "binomial")
+
+summary(mod.5final)
+
+
+
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # #
+
+##### OJO! Si huevos fuera categorico podría seguir el análisis:
+
+library(multcomp)
+levels(data$huevos)
+Cont1 <- glht(mod.5final, linfct = mcp(orden = "Tukey"))
+summary(Cont1)
 
